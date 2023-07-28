@@ -44,7 +44,7 @@ fn grade_F() {
 }
 
 #[test]
-fn grade_err() {
+fn grade_invalid() {
     let mut cmd = Command::cargo_bin("grade").unwrap();
     cmd.arg("420");
     cmd.assert().success().stdout("Invalid score");
