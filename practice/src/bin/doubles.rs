@@ -13,3 +13,11 @@ fn main() {
     
     println!("Doubled numbers: {:?}", numbers);
 }
+
+fn doubles_recursive(v: &mut [i64]) -> Vec<i64> {
+    if !v.is_empty() {
+        v[0] *= 2;
+        doubles_recursive(&mut v[1..]);
+    }
+    v.to_vec()
+}
