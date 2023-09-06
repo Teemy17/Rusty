@@ -7,7 +7,7 @@ fn unpack_number_tuples(tuples: &[(i32, i32)]) -> (Vec<i32>, Vec<i32>) {
         v2.push(tuple.1);
     }
 
-    (v1, v2)
+    return (v1, v2)
 }
 
 fn unpack_number_tuples3(tuples: &[(i32, i32, i32)]) -> (Vec<i32>, Vec<i32>, Vec<i32>) {
@@ -21,7 +21,7 @@ fn unpack_number_tuples3(tuples: &[(i32, i32, i32)]) -> (Vec<i32>, Vec<i32>, Vec
         v3.push(tuple.2);
     }
 
-    (v1, v2, v3)
+    return (v1, v2, v3)
 }
 
 #[test]
