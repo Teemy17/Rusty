@@ -3,7 +3,8 @@ use std::{fs::File, io::Write};
 use clap::{App, Arg};
 use std::error::Error;
 
-//Arway and Spoon codes
+//Arhway and Spoon codes
+// Bruh help pls
 pub struct Point {
     x: i64,
     y: i64,

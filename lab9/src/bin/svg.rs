@@ -3,6 +3,7 @@ use std::{fs::File, io::Write};
 use clap::{ App, Arg };
 use std::error::Error;
 // CussonSpoon codes
+// The output should not print out "" for the number 
 struct Point {
     x: i32,
     y: i32,
