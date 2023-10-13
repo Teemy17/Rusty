@@ -1,9 +1,9 @@
 use std::fs::File;
 use std::io::{BufRead, BufReader, Write};
-use std::cmp::Ordering;
+
 
 fn main() {
-    let files = vec!["fox.txt", "bustle.txt", "para3.txt"]; // Add your file names here
+    let files = vec!["fox.txt", "bustle.txt", "para3.txt"]; 
     let output_file = "2_1.html";
 
     let mut file_paragraph_counts: Vec<(String, usize)> = Vec::new();
