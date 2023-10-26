@@ -1,7 +1,7 @@
-use SysMonitor::{display_ram_usage, display_system_information};
+use SysMonitor::{display_ram_usage, display_system_information, display_cpu_usage, display_network_usage};
 
 fn main() {
-    display_ram_usage();
+    display_system_information();
 }
 
 
