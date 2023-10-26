@@ -20,7 +20,7 @@ pub fn display_ram_usage() {
     let mut terminal = Terminal::new(backend).unwrap();
 
     // Create a gauge widget to display CPU usage
-    let mut ram_gauge = Gauge::default()
+    let ram_gauge = Gauge::default()
         .block(Block::default().title("Memory Usage").borders(Borders::ALL))
         .gauge_style(tui::style::Style::default().fg(tui::style::Color::Yellow))
         .label("0%")
@@ -37,7 +37,7 @@ pub fn display_ram_usage() {
         let ram_usage = get_ram_usage();
 
         // Update the gauge widget with the new CPU usage percentage
-        let mut ram_gauge = ram_gauge.clone().percent(ram_usage.into()).label(format!("{}%", ram_usage));
+        let ram_gauge = ram_gauge.clone().percent(ram_usage.into()).label(format!("{}%", ram_usage));
 
         let text = vec![
             format!("Total memory: {} KB", sys.total_memory()),
