@@ -14,3 +14,5 @@ termion = "1.5"
 tui = { version = "0.19", default-features = false, features = ['termion'] }
 rand = "0.8"
 procfs = "0.6"
+clap = "2.33"
+plotters = "0.3.5"
