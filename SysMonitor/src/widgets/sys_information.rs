@@ -9,15 +9,15 @@ use tui::text::Text;
 use tui::widgets::Paragraph;
 use std::io;
 
-pub fn display_system_information() -> Result<(), Box<dyn std::error::Error>> {
+pub fn display_system_information() {
     // Create a new system instance
     let mut sys = System::new_all();
     sys.refresh_all();
 
     // Initialize TUI terminal and backend
-    let stdout = io::stdout().into_raw_mode()?;
+    let stdout = io::stdout().into_raw_mode().unwrap();
     let backend = TermionBackend::new(AlternateScreen::from(stdout));
-    let mut terminal = Terminal::new(backend)?;
+    let mut terminal = Terminal::new(backend).unwrap();
 
     // Create a TUI loop to display system information
     loop {
@@ -38,10 +38,7 @@ pub fn display_system_information() -> Result<(), Box<dyn std::error::Error>> {
         .block(Block::default().title("System Information").borders(Borders::ALL));
 
         // Clear the terminal and draw the TUI with the system information
-        terminal.draw(|f| {
-            // Clear the terminal
-            
-
+        terminal.draw(|f| {                  
             // Render the Paragraph widget
             let chunks = Layout::default()
                 .direction(Direction::Vertical)
@@ -51,7 +48,7 @@ pub fn display_system_information() -> Result<(), Box<dyn std::error::Error>> {
 
             f.render_widget(paragraph, chunks[0]);
             
-        })?;
+        }).unwrap();
          
          
     }

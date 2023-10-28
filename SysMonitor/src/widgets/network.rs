@@ -2,14 +2,12 @@ use std::thread;
 use std::time::Duration;
 use tui::Terminal;
 use tui::backend::TermionBackend;
-use tui::widgets::{Block, Borders};
+use tui::widgets::{Block, Borders, Paragraph, Sparkline};
 use tui::layout::{Layout, Constraint, Direction};
-use termion::raw::IntoRawMode; // Add this import for raw mode
-use termion::screen::AlternateScreen; // Add this import for AlternateScreen
-use sysinfo::{System, SystemExt, NetworkExt,};
-use tui::widgets::Paragraph;
+use termion::raw::IntoRawMode;
+use termion::screen::AlternateScreen;
+use sysinfo::{System, SystemExt, NetworkExt};
 use tui::style::{Style, Color};
-
 
 pub fn display_network_usage() {
     // Initialize TUI terminal and backend
@@ -24,19 +22,35 @@ pub fn display_network_usage() {
         .title("Network Usage")
         .borders(Borders::ALL);
 
+    // Initialize datasets for sparklines
+    let mut received_data: Vec<f64> = Vec::new();
+    let mut transmitted_data: Vec<f64> = Vec::new();
+
     loop {
-      
         sys.refresh_networks();
         let mut network_text: Vec<String> = Vec::new();
 
         for (interface_name, interface) in sys.networks() {
+            let received_kb = interface.received() as f64 / 1024.0;
+            let transmitted_kb = interface.transmitted() as f64 / 1024.0;
+
+            // Push data for the sparklines
+            received_data.push(received_kb);
+            transmitted_data.push(transmitted_kb);
+
             let text = format!(
                 "{}: {:.2} KB/s in, {:.2} KB/s out\n",
                 interface_name,
-                interface.received() as f64 / 1024.0,
-                interface.transmitted() as f64 / 1024.0
+                received_kb,
+                transmitted_kb
             );
             network_text.push(text);
+        }
+
+        // Trim the sparkline data to display a reasonable window
+        if received_data.len() > 100 {
+            received_data = received_data.split_off(received_data.len() - 100);
+            transmitted_data = transmitted_data.split_off(transmitted_data.len() - 100);
         }
 
         let network_block_clone = network_block.clone();
@@ -46,15 +60,31 @@ pub fn display_network_usage() {
                 let chunks = Layout::default()
                     .direction(Direction::Vertical)
                     .margin(0)
-                    .constraints([Constraint::Percentage(100)].as_ref())
+                    .constraints([Constraint::Percentage(80), Constraint::Percentage(20)].as_ref())
                     .split(f.size()); // Use the terminal size
 
                 let network_paragraph = Paragraph::new(network_text.join(""))
                     .block(network_block_clone)
-                    .style(Style::default().fg(Color::Blue))
+                    .style(Style::default().fg(Color::LightCyan))
                     .alignment(tui::layout::Alignment::Left);
 
                 f.render_widget(network_paragraph, chunks[0]);
+
+                // Create datasets for the sparklines
+                let received_dataset: Vec<u64> = received_data.iter().map(|&x| x as u64).collect();
+                let received_sparkline = Sparkline::default()
+                    .block(Block::default().title("Received Data").borders(Borders::ALL))
+                    .data(&received_dataset);
+
+                f.render_widget(received_sparkline, chunks[1]);
+
+                // Create another sparkline for transmitted data
+                let transmitted_dataset: Vec<u64> = transmitted_data.iter().map(|&x| x as u64).collect();
+                let transmitted_sparkline = Sparkline::default()
+                    .block(Block::default().title("Transmitted Data").borders(Borders::ALL))
+                    .data(&transmitted_dataset);
+
+                f.render_widget(transmitted_sparkline, chunks[1]);
             })
             .unwrap();
 

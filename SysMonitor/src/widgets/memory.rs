@@ -3,21 +3,18 @@ use std::{
     thread,
     time::Duration,
 };
-
 use tui::{
     Terminal,
     backend::TermionBackend,
     widgets::{Block, Borders, Gauge, Row, Table},
     layout::{Layout, Constraint, Direction},
 };
-
 use termion::{
     raw::IntoRawMode,
     screen::AlternateScreen,
     input::TermRead,
     event::Key,
 };
-
 use sysinfo::{
     System,
     SystemExt,
