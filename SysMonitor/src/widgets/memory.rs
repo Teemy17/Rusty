@@ -1,95 +1,86 @@
 use std::thread;
 use std::time::Duration;
-use tui::{
-    backend::TermionBackend,
-    widgets::{Block, Borders, Gauge, Row, Table},
-    layout::{Constraint, Direction, Layout},
-    Terminal,
-};
-use termion::{event::Key, input::TermRead, raw::IntoRawMode, screen::AlternateScreen};
-use sysinfo::{System, SystemExt};
-use termion::raw::RawTerminal;
-use std::io::stdout;
+use tui::Terminal;
+use tui::backend::TermionBackend;
+use tui::widgets::{Block, Borders, Gauge};
+use tui::layout::{Layout, Constraint, Direction};
+use termion::raw::IntoRawMode; // Add this import for raw mode
+use termion::screen::AlternateScreen; // Add this import for AlternateScreen
+use sysinfo::System;
+use sysinfo::SystemExt;
+use tui::widgets::{Row, Table};
+use termion::input::TermRead;
+use termion::event::{Key, Event, MouseEvent};
+
 
 pub fn display_ram_usage() {
     // Initialize TUI terminal and backend
-    let stdout = stdout().into_raw_mode().unwrap();
-    let backend = TermionBackend::new(AlternateScreen::from(RawTerminal::from(stdout)));
+    let stdout = std::io::stdout().into_raw_mode().unwrap(); // Set terminal in raw mode
+    let backend = TermionBackend::new(AlternateScreen::from(stdout)); // Use AlternateScreen
     let mut terminal = Terminal::new(backend).unwrap();
 
-    let mut sys = System::new_all();
-
-    loop {
-        sys.refresh_all();
-
-        let ram_usage = get_ram_usage(&sys);
-
-        let ram_display = create_ram_display(&sys, ram_usage);
-
-        // Draw the TUI layout
-        draw_ui(&mut terminal, &ram_display);
-
-        thread::sleep(Duration::from_millis(100));
-
-        if is_exit_key_pressed() {
-            break; // Exit the loop
-        }
-    }
-}
-
-fn get_ram_usage(sys: &System) -> u8 {
-    let ram_time = sys.used_memory();
-    let total_time = sys.total_memory();
-
-    ((ram_time as f64 / total_time as f64) * 100.0) as u8
-}
-
-fn create_ram_display(sys: &System, ram_usage: u8) -> (Gauge, Table) {
+    // Create a gauge widget to display memory usage
     let ram_gauge = Gauge::default()
         .block(Block::default().title("Memory Usage").borders(Borders::ALL))
         .gauge_style(tui::style::Style::default().fg(tui::style::Color::Yellow))
-        .label(format!("{}%", ram_usage))
-        .percent(ram_usage as u16);
+        .label("0%")
+        .percent(0);
 
-    let text = vec![
-        format!("Total memory: {:.2} GB", convert_kb_to_gb(sys.total_memory())),
-        format!("Free memory : {:.2} GB", convert_kb_to_gb(sys.free_memory())),
-        format!("Used memory : {:.2} GB", convert_kb_to_gb(sys.used_memory())),
-        format!("Total swap  : {:.2} GB", convert_kb_to_gb(sys.total_swap())),
-        format!("Free swap   : {:.2} GB", convert_kb_to_gb(sys.free_swap())),
-        format!("Used swap   : {:.2} GB", convert_kb_to_gb(sys.used_swap())),
-    ];
+    let mut sys = System::new_all();
 
-    let rows: Vec<Row> = text.iter().map(|line| Row::new(vec![line.to_string()])).collect();
+    // Loop to update the CPU usage gauge
+    loop {
+        sys.refresh_all();
 
-    let table = Table::new(rows)
-        .block(Block::default().title("Memory Details").borders(Borders::ALL))
-        .widths(&[Constraint::Percentage(100)]);
+        // Get the current CPU usage as a percentage
+        let ram_usage = get_ram_usage();
 
-    (ram_gauge, table)
-}
+        // Update the gauge widget with the new CPU usage percentage
+        let ram_gauge = ram_gauge.clone().percent(ram_usage.into()).label(format!("{}%", ram_usage));
 
-fn draw_ui(terminal: &mut Terminal<TermionBackend<AlternateScreen<RawTerminal<std::io::Stdout>>>>, ram_display: &(Gauge, Table)) {
-    terminal.draw(|f| {
-        let chunks = Layout::default()
-            .direction(Direction::Vertical)
-            .margin(1)
-            .constraints([Constraint::Percentage(40), Constraint::Percentage(60)].as_ref())
-            .split(f.size());
-        f.render_widget(ram_display.0.clone(), chunks[0]);
-        f.render_widget(ram_display.1.clone(), chunks[1]);
-    }).unwrap();
-}
+        let text = vec![
+            format!("Total memory: {:.2} GB", convert_kb_to_gb(sys.total_memory())),
+            format!("Free memory : {:.2} GB", convert_kb_to_gb(sys.free_memory())),
+            format!("Used memory : {:.2} GB", convert_kb_to_gb(sys.used_memory())),
+            format!("Total swap  : {:.2} GB", convert_kb_to_gb(sys.total_swap())),
+            format!("Free swap   : {:.2} GB", convert_kb_to_gb(sys.free_swap())),
+            format!("Used swap   : {:.2} GB", convert_kb_to_gb(sys.used_swap())),
+        ];
 
-fn is_exit_key_pressed() -> bool {
-    for key in std::io::stdin().keys() {
-        if let Ok(key) = key {
-            if let Key::Ctrl('q') = key {
-                return true;
-            }
-        }
+        let rows: Vec<Row> = text.iter().map(|line| Row::new(vec![line.to_string()])).collect();
+
+        let table = Table::new(rows)
+            .block(Block::default().title("Memory Details").borders(Borders::ALL))
+            .widths(&[Constraint::Percentage(100)]);
+
+
+        // Draw the TUI layout with the CPU usage gauge
+        terminal.draw(|f| {
+            let chunks = Layout::default()
+                .direction(Direction::Vertical)
+                .margin(1)
+                .constraints([Constraint::Percentage(40), Constraint::Percentage(60)].as_ref())
+                .split(f.size());
+            f.render_widget(ram_gauge, chunks[0]);
+            f.render_widget(table, chunks[1]);
+        }).unwrap();
+
+        // Wait for a short period of time before updating the gauge again
+        thread::sleep(Duration::from_millis(100));
     }
-    false
+}
+
+
+fn get_ram_usage() -> u8 {
+    let mut sys = System::new_all();
+    sys.refresh_all();
+    let ram_time = sys.used_memory();
+    let total_time = sys.total_memory();
+
+    // Calculate CPU usage as a percentage
+    let ram_usage = ((ram_time as f64 / total_time as f64) * 100.0) as u8;
+
+    ram_usage
 }
 
 fn convert_kb_to_gb(kb: u64) -> f64 {
