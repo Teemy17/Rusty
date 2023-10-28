@@ -1,16 +1,27 @@
-use std::thread;
-use std::time::Duration;
-use tui::Terminal;
-use tui::backend::TermionBackend;
-use tui::widgets::{Block, Borders, Gauge};
-use tui::layout::{Layout, Constraint, Direction};
-use termion::raw::IntoRawMode; // Add this import for raw mode
-use termion::screen::AlternateScreen; // Add this import for AlternateScreen
-use sysinfo::System;
-use sysinfo::SystemExt;
-use tui::widgets::{Row, Table};
-use termion::input::TermRead;
-use termion::event::{Key, Event, MouseEvent};
+use std::{
+    io,
+    thread,
+    time::Duration,
+};
+
+use tui::{
+    Terminal,
+    backend::TermionBackend,
+    widgets::{Block, Borders, Gauge, Row, Table},
+    layout::{Layout, Constraint, Direction},
+};
+
+use termion::{
+    raw::IntoRawMode,
+    screen::AlternateScreen,
+    input::TermRead,
+    event::Key,
+};
+
+use sysinfo::{
+    System,
+    SystemExt,
+};
 
 
 pub fn display_ram_usage() {
@@ -27,6 +38,21 @@ pub fn display_ram_usage() {
         .percent(0);
 
     let mut sys = System::new_all();
+
+    let (tx, rx) = std::sync::mpsc::channel();
+    let tx_clone = tx.clone();
+
+    // Spawn a thread to handle user input asynchronously
+    thread::spawn(move || {
+        let stdin = io::stdin();
+        for key in stdin.keys() {
+            if let Ok(key) = key {
+                if tx_clone.send(key).is_err() {
+                    break;
+                }
+            }
+        }
+    });
 
     // Loop to update the CPU usage gauge
     loop {
@@ -65,6 +91,12 @@ pub fn display_ram_usage() {
             f.render_widget(table, chunks[1]);
         }).unwrap();
 
+        if let Ok(key) = rx.try_recv() {
+            match key {
+                Key::Ctrl('q') => break, // Exit the loop when ctral+q is pressed
+                _ => {} // Handle other key events if needed
+            }
+        }
         // Wait for a short period of time before updating the gauge again
         thread::sleep(Duration::from_millis(100));
     }
