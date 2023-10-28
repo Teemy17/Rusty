@@ -1,37 +1,51 @@
-use SysMonitor::{display_ram_usage, display_system_information, display_cpu_usage, display_network_usage
-                , display_each_cpu_usage2
-                };
+mod widgets;
+use widgets::memory::display_ram_usage;
+use widgets::sys_information::display_system_information;
+use widgets::network::display_network_usage;
+use widgets::cpu::display_cpu_usage;
+use clap::Parser;
+
+/// Simple program to display system information
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    /// Option to display memory usage
+    #[arg(short, long)]
+    memory: bool,
+
+    /// Option to display system information
+    #[arg(short, long)]
+    system_info: bool,
+
+    /// Option to display network usage
+    #[arg(short, long)]
+    network: bool,
+
+    /// Option to display CPU usage
+    #[arg(short, long)]
+    cpu: bool,
+}
 
 fn main() {
-    display_ram_usage()
+    let args = Args::parse();
+    
+    if args.memory {
+        display_ram_usage();
+    }
+
+    if args.system_info {
+        display_system_information();
+    }
+
+    if args.network {
+        display_network_usage();
+    }
+
+    if args.cpu {
+        display_cpu_usage();
+    }
 }
-                
 
 
 
 
-// use sysinfo::{ProcessExt, System, SystemExt};
-// use std::time::Duration;
-
-// fn main() {
-//     let mut system = System::new_all();
-
-//     loop {
-//         system.refresh_all();
-
-//         println!("Total memory: {} KB", system.total_memory());
-//         println!("Free memory : {} KB", system.free_memory());
-//         println!("Used memory : {} KB", system.used_memory());
-
-        // println!("Total swap  : {} KB", system.total_swap());
-        // println!("Free swap   : {} KB", system.free_swap());
-        // println!("Used swap   : {} KB", system.used_swap());
-
-//         println!("Processes: {}", system.processes().len());
-     
-
- 
-
-//         std::thread::sleep(Duration::from_secs(1));
-//     }
-// }

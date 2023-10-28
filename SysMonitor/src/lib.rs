@@ -12,13 +12,6 @@ use sysinfo::{CpuExt, RefreshKind, CpuRefreshKind};
 use tui::text::{Text, Span, Spans};
 use tui::widgets::Paragraph;
 use tui::style::{Style, Color};
-use tui::symbols;
-use std::collections::VecDeque;
-use tui::symbols::Marker;
-use tui::widgets::Widget;
-use tui::buffer::Buffer;
-use tui::layout::Rect;
-use tui::layout::Alignment;
 use tui::widgets::{Row, Table, Cell};
 use std::io;
 
@@ -29,7 +22,7 @@ pub fn display_ram_usage() {
     let backend = TermionBackend::new(AlternateScreen::from(stdout)); // Use AlternateScreen
     let mut terminal = Terminal::new(backend).unwrap();
 
-    // Create a gauge widget to display CPU usage
+    // Create a gauge widget to display memory usage
     let ram_gauge = Gauge::default()
         .block(Block::default().title("Memory Usage").borders(Borders::ALL))
         .gauge_style(tui::style::Style::default().fg(tui::style::Color::Yellow))
@@ -42,7 +35,6 @@ pub fn display_ram_usage() {
     loop {
         sys.refresh_all();
 
-
         // Get the current CPU usage as a percentage
         let ram_usage = get_ram_usage();
 
@@ -50,13 +42,19 @@ pub fn display_ram_usage() {
         let ram_gauge = ram_gauge.clone().percent(ram_usage.into()).label(format!("{}%", ram_usage));
 
         let text = vec![
-            format!("Total memory: {} KB", sys.total_memory()),
-            format!("Free memory : {} KB", sys.free_memory()),
-            format!("Used memory : {} KB", sys.used_memory()),
-            format!("Total swap  : {} KB", sys.total_swap()),
-            format!("Free swap   : {} KB", sys.free_swap()),
-            format!("Used swap   : {} KB", sys.used_swap()),
+            format!("Total memory: {:.2} GB", convert_kb_to_gb(sys.total_memory())),
+            format!("Free memory : {:.2} GB", convert_kb_to_gb(sys.free_memory())),
+            format!("Used memory : {:.2} GB", convert_kb_to_gb(sys.used_memory())),
+            format!("Total swap  : {:.2} GB", convert_kb_to_gb(sys.total_swap())),
+            format!("Free swap   : {:.2} GB", convert_kb_to_gb(sys.free_swap())),
+            format!("Used swap   : {:.2} GB", convert_kb_to_gb(sys.used_swap())),
         ];
+
+        let rows: Vec<Row> = text.iter().map(|line| Row::new(vec![line.to_string()])).collect();
+
+        let table = Table::new(rows)
+            .block(Block::default().title("Memory Details").borders(Borders::ALL))
+            .widths(&[Constraint::Percentage(100)]);
 
 
         // Draw the TUI layout with the CPU usage gauge
@@ -64,10 +62,10 @@ pub fn display_ram_usage() {
             let chunks = Layout::default()
                 .direction(Direction::Vertical)
                 .margin(1)
-                .constraints([Constraint::Percentage(70), Constraint::Percentage(30)].as_ref())
+                .constraints([Constraint::Percentage(40), Constraint::Percentage(60)].as_ref())
                 .split(f.size());
             f.render_widget(ram_gauge, chunks[0]);
-            f.render_widget(Paragraph::new(text.join("\n")), chunks[1]);
+            f.render_widget(table, chunks[1]);
         }).unwrap();
 
         // Wait for a short period of time before updating the gauge again
@@ -87,6 +85,10 @@ fn get_ram_usage() -> u8 {
     ram_usage
 }
 
+fn convert_kb_to_gb(kb: u64) -> f64 {
+    kb as f64 / 1024.0 / 1024.0 / 1024.0
+}
+
 pub fn display_system_information() {
     let mut sys = System::new_all();
     sys.refresh_all();
@@ -96,6 +98,55 @@ pub fn display_system_information() {
     println!("System kernel version:   {:?}", sys.kernel_version().unwrap_or("N/A".to_string()));
     println!("System OS version:       {:?}", sys.os_version().unwrap_or("N/A".to_string()));
     println!("System host name:        {:?}", sys.host_name().unwrap_or("N/A".to_string()));
+}
+
+pub fn display_system_information2() -> Result<(), Box<dyn std::error::Error>> {
+    // Create a new system instance
+    let mut sys = System::new_all();
+    sys.refresh_all();
+
+    // Initialize TUI terminal and backend
+    let stdout = io::stdout().into_raw_mode()?;
+    let backend = TermionBackend::new(AlternateScreen::from(stdout));
+    let mut terminal = Terminal::new(backend)?;
+
+    // Create a TUI loop to display system information
+    loop {
+        // Gather system information
+        let system_name = sys.name().unwrap();
+        let kernel_version = sys.kernel_version().unwrap();
+        let os_version = sys.os_version().unwrap();
+        let host_name = sys.host_name().unwrap();
+
+        let system_info = Text::from(format!(
+            "System name: {}\nKernel version: {}\nOS version: {}\nHost name: {}",
+            system_name, kernel_version, os_version, host_name
+        ));
+        
+
+        // Create a Paragraph widget to display the system information
+        let paragraph = Paragraph::new(system_info)
+        .block(Block::default().title("System Information").borders(Borders::ALL));
+
+        // Clear the terminal and draw the TUI with the system information
+        terminal.draw(|f| {
+            // Clear the terminal
+            
+
+            // Render the Paragraph widget
+            let chunks = Layout::default()
+                .direction(Direction::Vertical)
+                .margin(0)
+                .constraints([Constraint::Percentage(100)].as_ref())
+                .split(f.size()); // Use the terminal size
+
+            f.render_widget(paragraph, chunks[0]);
+            
+        })?;
+         
+         
+    }
+
 }
 
 pub fn display_cpu_usage() {
@@ -120,7 +171,7 @@ pub fn display_cpu_usage() {
 pub fn display_network_usage() {
     // Initialize TUI terminal and backend
     let stdout = std::io::stdout().into_raw_mode().unwrap();
-    let backend = TermionBackend::new(stdout);
+    let backend = TermionBackend::new(AlternateScreen::from(stdout));
     let mut terminal = Terminal::new(backend).unwrap();
 
     let mut sys = System::new_all();
@@ -229,9 +280,14 @@ pub fn display_network_usage() {
     
 // }
 
-pub fn display_each_cpu_usage2() -> Result<(), io::Error> {
+pub fn display_each_cpu_usage() {
     // Create a new system instance
     let mut sys = System::new_all();
+
+    // Create a separate terminal for TUI
+    let stdout = io::stdout().into_raw_mode().unwrap();
+    let backend = TermionBackend::new(AlternateScreen::from(stdout));
+    let mut terminal = Terminal::new(backend).unwrap();
 
     // Main loop to continuously display CPU usage
     loop {
@@ -250,11 +306,6 @@ pub fn display_each_cpu_usage2() -> Result<(), io::Error> {
             })
             .collect();
 
-        // Initialize TUI terminal and backend
-        let stdout = io::stdout();
-        let backend = TermionBackend::new(stdout);
-        let mut terminal = Terminal::new(backend)?;
-
         // Create a table widget to display the CPU usage text
         let table = Table::new(
             cpu_text.iter().map(|text| {
@@ -265,10 +316,7 @@ pub fn display_each_cpu_usage2() -> Result<(), io::Error> {
         .header(Row::new(vec![Cell::from("Usage")]))
         .widths(&[Constraint::Percentage(100)]);
 
-        // Clear the terminal
-        terminal.clear()?;
-
-        // Draw the TUI with the CPU usage text
+        // Clear the TUI terminal and draw the TUI with the CPU usage text
         terminal.draw(|f| {
             let chunks = Layout::default()
                 .direction(Direction::Vertical)
@@ -277,7 +325,7 @@ pub fn display_each_cpu_usage2() -> Result<(), io::Error> {
                 .split(f.size()); // Use the terminal size
 
             f.render_widget(table, chunks[0]);
-        })?;
+        }).unwrap();
 
         // Sleep for a while to control the refresh rate
         thread::sleep(Duration::from_secs(1));
