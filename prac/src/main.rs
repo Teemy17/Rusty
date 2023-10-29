@@ -1,17 +1,10 @@
+use sysinfo::{CpuExt, System, SystemExt, RefreshKind, CpuRefreshKind};
 
-#[derive(Debug)]
-struct Rectangle {
-  width: u32,
-  height: u32,
-}
 fn main() {
-  let rect1 = Rectangle {
-    width: 30,
-    height: 50,
-  };
-  let a = area(&rect1);
-  println!("{} * {} = {}", rect1.width, rect1.height, a);
+let s = System::new_with_specifics(
+    RefreshKind::new().with_cpu(CpuRefreshKind::everything()),
+);
+for cpu in s.cpus() {
+    println!("{}", cpu.brand());
 }
-fn area(rectangle: &Rectangle) -> u32 {
-  rectangle.width * rectangle.height
-}   
+}

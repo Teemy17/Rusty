@@ -2,15 +2,15 @@ use std::thread;
 use std::time::Duration;
 use tui::Terminal;
 use tui::backend::TermionBackend;
-use tui::widgets::{Block, Borders, Paragraph, Sparkline};
-use tui::layout::{Layout, Constraint, Direction};
+use tui::widgets::{ Block, Borders, Paragraph, Sparkline };
+use tui::layout::{ Layout, Constraint, Direction };
 use termion::raw::IntoRawMode;
 use termion::screen::AlternateScreen;
-use sysinfo::{System, SystemExt, NetworkExt};
-use tui::style::{Style, Color};
+use sysinfo::{ System, SystemExt, NetworkExt };
+use tui::style::{ Style, Color };
+use SysMonitor::exit;
 
 pub fn display_network_usage() {
-    // Initialize TUI terminal and backend
     let stdout = std::io::stdout().into_raw_mode().unwrap();
     let backend = TermionBackend::new(AlternateScreen::from(stdout));
     let mut terminal = Terminal::new(backend).unwrap();
@@ -18,23 +18,26 @@ pub fn display_network_usage() {
     let mut sys = System::new_all();
     sys.refresh_all();
 
-    let network_block = Block::default()
-        .title("Network Usage")
-        .borders(Borders::ALL);
+    let network_block = Block::default().title("Network Usage").borders(Borders::ALL);
 
-    // Initialize datasets for sparklines
     let mut received_data: Vec<f64> = Vec::new();
     let mut transmitted_data: Vec<f64> = Vec::new();
+
+    let (tx, rx) = std::sync::mpsc::channel();
+
+    // Spawn a separate thread to handle keyboard input
+    thread::spawn(move || {
+        exit(tx);
+    });
 
     loop {
         sys.refresh_networks();
         let mut network_text: Vec<String> = Vec::new();
 
         for (interface_name, interface) in sys.networks() {
-            let received_kb = interface.received() as f64 / 1024.0;
-            let transmitted_kb = interface.transmitted() as f64 / 1024.0;
+            let received_kb = (interface.received() as f64) / 1024.0;
+            let transmitted_kb = (interface.transmitted() as f64) / 1024.0;
 
-            // Push data for the sparklines
             received_data.push(received_kb);
             transmitted_data.push(transmitted_kb);
 
@@ -71,7 +74,10 @@ pub fn display_network_usage() {
                 f.render_widget(network_paragraph, chunks[0]);
 
                 // Create datasets for the sparklines
-                let received_dataset: Vec<u64> = received_data.iter().map(|&x| x as u64).collect();
+                let received_dataset: Vec<u64> = received_data
+                    .iter()
+                    .map(|&x| x as u64)
+                    .collect();
                 let received_sparkline = Sparkline::default()
                     .block(Block::default().title("Received Data").borders(Borders::ALL))
                     .data(&received_dataset);
@@ -79,7 +85,10 @@ pub fn display_network_usage() {
                 f.render_widget(received_sparkline, chunks[1]);
 
                 // Create another sparkline for transmitted data
-                let transmitted_dataset: Vec<u64> = transmitted_data.iter().map(|&x| x as u64).collect();
+                let transmitted_dataset: Vec<u64> = transmitted_data
+                    .iter()
+                    .map(|&x| x as u64)
+                    .collect();
                 let transmitted_sparkline = Sparkline::default()
                     .block(Block::default().title("Transmitted Data").borders(Borders::ALL))
                     .data(&transmitted_dataset);
@@ -88,6 +97,12 @@ pub fn display_network_usage() {
             })
             .unwrap();
 
+        if let Ok(_) = rx.try_recv() {
+            break;
+        }
+
         thread::sleep(Duration::from_millis(100));
     }
 }
+
+// exit() function to handle keyboard input. Press Ctrl+q to exit the program.

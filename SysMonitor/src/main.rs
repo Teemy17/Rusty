@@ -3,11 +3,16 @@ use widgets::memory::display_ram_usage;
 use widgets::sys_information::display_system_information;
 use widgets::network::display_network_usage;
 use widgets::cpu::display_cpu_usage;
+use widgets::disk::display_disk_usage;
+use widgets::temperature::display_temperature;
 use clap::Parser;
 
-/// Simple program to display system information
+
+/// SysMonitor CLI, Display system information in the terminal.
+/// To exit the TUI, press the Ctrl + 'q' key.
 #[derive(Parser, Debug)]
-#[command(author, version, about, long_about = None)]
+#[command(author, version, about, long_about = None, verbatim_doc_comment)]
+#[command(arg_required_else_help = true)]
 struct Args {
     /// Option to display memory usage
     #[arg(short, long)]
@@ -24,11 +29,20 @@ struct Args {
     /// Option to display CPU usage
     #[arg(short, long)]
     cpu: bool,
+
+    /// Option to display disk usage
+    #[arg(short, long)]
+    disk: bool,
+
+    /// Option to display components temperature
+    #[arg(short, long)]
+    temperature: bool,
+    
 }
 
 fn main() {
     let args = Args::parse();
-    
+
     if args.memory {
         display_ram_usage();
     }
@@ -44,8 +58,12 @@ fn main() {
     if args.cpu {
         display_cpu_usage();
     }
+
+    if args.disk {
+        display_disk_usage();
+    }
+
+    if args.temperature {
+        display_temperature();
+    }
 }
-
-
-
-
