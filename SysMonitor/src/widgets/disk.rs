@@ -1,12 +1,11 @@
-use std::sync::mpsc;
-use std::thread;
-use std::time::Duration;
-use tui::Terminal;
-use tui::backend::TermionBackend;
-use tui::widgets::{ Block, Borders, Paragraph };
-use tui::layout::{ Layout, Constraint, Direction };
-use termion::raw::IntoRawMode;
-use termion::screen::AlternateScreen;
+use std::{ sync::mpsc, thread, time::Duration };
+use tui::{
+    Terminal,
+    backend::TermionBackend,
+    widgets::{ Block, Borders, Paragraph },
+    layout::{ Layout, Constraint, Direction },
+};
+use termion::{ raw::IntoRawMode, screen::AlternateScreen };
 use sysinfo::{ System, SystemExt, DiskExt };
 use SysMonitor::exit;
 
@@ -78,7 +77,7 @@ pub fn display_disk_usage() {
     }
 }
 
-//Convert file system from ascii to text
+//Convert filesystem from ascii to text
 fn convert_ascii_to_text(ascii: &[u8]) -> String {
     ascii
         .into_iter()

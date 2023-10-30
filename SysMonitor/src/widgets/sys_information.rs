@@ -1,36 +1,32 @@
-use tui::Terminal;
-use tui::backend::TermionBackend;
-use tui::widgets::{ Block, Borders };
-use tui::layout::{ Layout, Constraint, Direction };
-use termion::raw::IntoRawMode; 
-use termion::screen::AlternateScreen; 
+use tui::{
+    Terminal,
+    backend::TermionBackend,
+    widgets::{ Block, Borders, Paragraph },
+    layout::{ Layout, Constraint, Direction },
+    text::Text,
+};
+use termion::{ raw::IntoRawMode, screen::AlternateScreen };
 use sysinfo::{ System, SystemExt, CpuExt };
-use tui::text::Text;
-use tui::widgets::Paragraph;
 use std::io;
 use SysMonitor::exit;
 
 pub fn display_system_information() {
-    // Create a new system instance
     let mut sys = System::new_all();
     sys.refresh_all();
 
-    // Initialize TUI terminal and backend
     let stdout = io::stdout().into_raw_mode().unwrap();
     let backend = TermionBackend::new(AlternateScreen::from(stdout));
     let mut terminal = Terminal::new(backend).unwrap();
 
     let (tx, rx) = std::sync::mpsc::channel();
 
-    // Spawn a separate thread to handle keyboard input
     std::thread::spawn(move || {
         exit(tx);
     });
 
-    // Create a TUI loop to display system information
     loop {
         sys.refresh_all();
-        // Gather system information
+
         let system_name = sys.name().unwrap();
         let kernel_version = sys.kernel_version().unwrap();
         let os_version = sys.long_os_version().unwrap();
@@ -54,12 +50,10 @@ pub fn display_system_information() {
             )
         );
 
-        // Create a Paragraph widget to display the system information
         let paragraph = Paragraph::new(system_info).block(
             Block::default().title("System Information").borders(Borders::ALL)
         );
 
-        // Clear the terminal and draw the TUI with the system information
         terminal
             .draw(|f| {
                 // Render the Paragraph widget

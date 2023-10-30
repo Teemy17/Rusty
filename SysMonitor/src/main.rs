@@ -1,12 +1,13 @@
 mod widgets;
-use widgets::memory::display_ram_usage;
-use widgets::sys_information::display_system_information;
-use widgets::network::display_network_usage;
-use widgets::cpu::display_cpu_usage;
-use widgets::disk::display_disk_usage;
-use widgets::temperature::display_temperature;
+use widgets::{
+    memory::display_ram_usage,
+    sys_information::display_system_information,
+    network::display_network_usage,
+    cpu::display_cpu_usage,
+    disk::display_disk_usage,
+    temperature::display_temperature,
+};
 use clap::Parser;
-
 
 /// SysMonitor CLI, Display system information in the terminal.
 /// To exit the TUI, press the Ctrl + 'q' key.
@@ -37,7 +38,6 @@ struct Args {
     /// Option to display components temperature
     #[arg(short, long)]
     temperature: bool,
-    
 }
 
 fn main() {

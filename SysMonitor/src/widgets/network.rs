@@ -1,13 +1,13 @@
-use std::thread;
-use std::time::Duration;
-use tui::Terminal;
-use tui::backend::TermionBackend;
-use tui::widgets::{ Block, Borders, Paragraph, Sparkline };
-use tui::layout::{ Layout, Constraint, Direction };
-use termion::raw::IntoRawMode;
-use termion::screen::AlternateScreen;
+use std::{ thread, time::Duration };
+use tui::{
+    Terminal,
+    backend::TermionBackend,
+    widgets::{ Block, Borders, Paragraph, Sparkline },
+    layout::{ Layout, Constraint, Direction },
+    style::{ Style, Color },
+};
+use termion::{ raw::IntoRawMode, screen::AlternateScreen };
 use sysinfo::{ System, SystemExt, NetworkExt };
-use tui::style::{ Style, Color };
 use SysMonitor::exit;
 
 pub fn display_network_usage() {
@@ -25,7 +25,6 @@ pub fn display_network_usage() {
 
     let (tx, rx) = std::sync::mpsc::channel();
 
-    // Spawn a separate thread to handle keyboard input
     thread::spawn(move || {
         exit(tx);
     });
@@ -50,7 +49,7 @@ pub fn display_network_usage() {
             network_text.push(text);
         }
 
-        // Trim the sparkline data to display a reasonable window
+        // Trim the sparkline data
         if received_data.len() > 100 {
             received_data = received_data.split_off(received_data.len() - 100);
             transmitted_data = transmitted_data.split_off(transmitted_data.len() - 100);
@@ -64,7 +63,7 @@ pub fn display_network_usage() {
                     .direction(Direction::Vertical)
                     .margin(0)
                     .constraints([Constraint::Percentage(80), Constraint::Percentage(20)].as_ref())
-                    .split(f.size()); // Use the terminal size
+                    .split(f.size());
 
                 let network_paragraph = Paragraph::new(network_text.join(""))
                     .block(network_block_clone)
@@ -104,5 +103,3 @@ pub fn display_network_usage() {
         thread::sleep(Duration::from_millis(100));
     }
 }
-
-// exit() function to handle keyboard input. Press Ctrl+q to exit the program.

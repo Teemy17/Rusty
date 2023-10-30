@@ -10,3 +10,4 @@ sysinfo = "0.29.10"
 termion = "1.5"
 tui = { version = "0.19", default-features = false, features = ['termion'] }
 clap = {version="4.4.6", features= ["derive"]}
+    

@@ -1,26 +1,23 @@
-use tui::Terminal;
-use tui::backend::TermionBackend;
-use tui::widgets::{ Block, Borders };
-use tui::layout::{ Layout, Constraint, Direction };
-use termion::raw::IntoRawMode; 
-use termion::screen::AlternateScreen; 
+use tui::{
+    Terminal,
+    backend::TermionBackend,
+    widgets::{ Block, Borders, Paragraph },
+    layout::{ Layout, Constraint, Direction },
+};
+use termion::{ raw::IntoRawMode, screen::AlternateScreen };
 use sysinfo::{ System, SystemExt, ComponentExt };
-use tui::widgets::Paragraph;
-use std::io;
 use SysMonitor::exit;
 
 pub fn display_temperature() {
     let mut sys = System::new_all();
     sys.refresh_all();
 
-    // Initialize TUI terminal and backend
-    let stdout = io::stdout().into_raw_mode().unwrap();
+    let stdout = std::io::stdout().into_raw_mode().unwrap();
     let backend = TermionBackend::new(AlternateScreen::from(stdout));
     let mut terminal = Terminal::new(backend).unwrap();
 
     let (tx, rx) = std::sync::mpsc::channel();
 
-    // Spawn a separate thread to handle keyboard input
     std::thread::spawn(move || {
         exit(tx);
     });
